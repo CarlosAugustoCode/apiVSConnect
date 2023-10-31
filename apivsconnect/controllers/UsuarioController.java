@@ -3,15 +3,18 @@ package com.senai.apivsconnect.controllers;
 import com.senai.apivsconnect.dtos.UsuarioDTO;
 import com.senai.apivsconnect.models.UsuarioModel;
 import com.senai.apivsconnect.repositories.UsuarioRepository;
+import com.senai.apivsconnect.services.FileUploadService;
 import jakarta.validation.OverridesAttribute;
 import jakarta.validation.Valid;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -22,6 +25,9 @@ import java.util.UUID;
 public class UsuarioController {
     @Autowired //Rolando uma injeção de dependencia, trazendo uma outra classe pra ser utilizada dentro da classe
     UsuarioRepository usuarioRepository;
+
+    @Autowired
+    FileUploadService fileUploadService;
 
     @GetMapping // método para listar todos os usuarios
     public ResponseEntity<List<UsuarioModel>> listarUsuarios() { // metodo responsável em receber a requisição com metodo get
@@ -41,7 +47,7 @@ public class UsuarioController {
 
     }
 
-    @PostMapping
+    @PostMapping(consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     public ResponseEntity<Object> cadastrarUsuario(@RequestBody @Valid UsuarioDTO usuarioDTO) {
         if (usuarioRepository.findByEmail(usuarioDTO.email()) != null) {
             //Não pode cadastrar
@@ -50,11 +56,20 @@ public class UsuarioController {
         UsuarioModel usuario = new UsuarioModel();
         BeanUtils.copyProperties(usuarioDTO, usuario);
 
+        String urlImagem;
+
+        try {
+            urlImagem = fileUploadService.FazerUpload(usuarioDTO.imagem());
+        } catch(IOException exception) {
+            throw new RuntimeException(exception);
+        }
+        usuario.setUrl_img(urlImagem);
+
         return ResponseEntity.status(HttpStatus.CREATED).body(usuarioRepository.save(usuario));
     }
 
-    @PutMapping("/{idUsuario}") //Alterar dados
-    public ResponseEntity<Object> editarUsuario(@PathVariable(value = "idUsuario") UUID id, @RequestBody @Valid UsuarioDTO usuarioDTO) {
+    @PutMapping(value = "/{idUsuario}", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE}) //Alterar dados
+    public ResponseEntity<Object> editarUsuario(@PathVariable(value = "idUsuario") UUID id, @ModelAttribute @Valid UsuarioDTO usuarioDTO) {
         Optional<UsuarioModel> usuarioBuscado = usuarioRepository.findById(id);
 
         if(usuarioBuscado.isEmpty()){
@@ -62,6 +77,15 @@ public class UsuarioController {
         }
         UsuarioModel usuario = usuarioBuscado.get();
         BeanUtils.copyProperties(usuarioDTO, usuario);
+
+        String urlImagem;
+
+        try {
+            urlImagem = fileUploadService.FazerUpload(usuarioDTO.imagem());
+        } catch(IOException exception) {
+            throw new RuntimeException(exception);
+        }
+        usuario.setUrl_img(urlImagem);
 
         return ResponseEntity.status(HttpStatus.CREATED).body(usuarioRepository.save(usuario));
     }

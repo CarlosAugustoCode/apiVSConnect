@@ -3,6 +3,7 @@ package com.senai.apivsconnect.dtos;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import org.springframework.web.multipart.MultipartFile;
 
 public record UsuarioDTO(
         @NotBlank String nome,
@@ -11,7 +12,7 @@ public record UsuarioDTO(
         String endereco,
         String cep,
         String tipo_usuario,
-        String url_img
+        MultipartFile imagem
 ) {
 
 }
